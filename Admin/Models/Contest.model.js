@@ -1,0 +1,43 @@
+import mongoose from "mongoose";
+
+const testSchema = new mongoose.Schema(
+  {
+    testName: { type: String, required: true },
+    description: { type: String, required: true, maxlength: 250 },
+    date: { type: Date, required: true },
+    duration: { type: Number, required: true },
+    questions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Question",
+        required: true,
+      },
+    ],
+    participants: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    status: {
+      type: String,
+      enum: ["pending", "completed", "draft", "active"],
+      default: "pending", // new contests start as pending
+    },
+    notificationsSent: {
+      type: Boolean,
+      default: false, // to track if notifications have been sent
+    },
+    isDraft: {
+      type: Boolean,
+      default: false,
+    },
+    isPublished: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
+
+export const Test = mongoose.model("Test", testSchema);

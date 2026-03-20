@@ -1,0 +1,20 @@
+import mongoose from "mongoose"
+
+const questionSchema = new mongoose.Schema({
+    questionText: {
+        type: String,
+        required: true,
+    },
+    options: {
+        type: [String],
+        validate: [arr => arr.length === 4, "Must have exactly 4 options"],
+        required: true,
+        set: arr => arr.map(opt => opt.trim())
+    },
+    
+    correctOption: {
+        type: Number,
+        required: true,
+    }
+}, { timestamps: true });
+export const Question = mongoose.model('Question', questionSchema);
