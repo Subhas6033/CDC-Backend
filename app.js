@@ -10,6 +10,8 @@ import { adminAuthRoute } from "./Admin/Routes/Auth.routes.js";
 import contestDetailsRouter from "./Service/Routes/TestDetails.routes.js";
 import viewersRouter from "./Service/Routes/Statistic.routes.js";
 import contactRouter from "./Service/Routes/Contact.routes.js";
+import userDashboardRouter from "./Service/Routes/UserDashboard.routes.js";
+import "./Admin/Controllers/CheckCorrectAnswer.controller.js";
 
 const app = express();
 
@@ -22,9 +24,9 @@ const requestLogger = (req, res, next) => {
   const timestamp = new Date().toISOString();
 
   // Log incoming request
-  console.log(`\n📨 [${timestamp}] ${method} ${url}`);
+  /*   console.log(`\n📨 [${timestamp}] ${method} ${url}`);
   console.log(`   IP: ${ip}`);
-  console.log(`   User-Agent: ${userAgent}`);
+  console.log(`   User-Agent: ${userAgent}`); */
 
   // Log request body for POST/PUT/PATCH (excluding sensitive data)
   if (["POST", "PUT", "PATCH"].includes(method) && req.body) {
@@ -32,7 +34,7 @@ const requestLogger = (req, res, next) => {
     // Hide sensitive fields
     if (sanitizedBody.password) sanitizedBody.password = "***";
     if (sanitizedBody.refreshToken) sanitizedBody.refreshToken = "***";
-    console.log(`   Body:`, JSON.stringify(sanitizedBody, null, 2));
+    // console.log(`   Body:`, JSON.stringify(sanitizedBody, null, 2));
   }
 
   // Capture response
@@ -41,13 +43,13 @@ const requestLogger = (req, res, next) => {
     const status = res.statusCode;
     const statusIcon = status >= 400 ? "❌" : "✅";
 
-    console.log(
+    /* console.log(
       `${statusIcon} [${timestamp}] ${method} ${url} - ${status} (${duration}ms)`
-    );
+    ); */
 
     // Log response for errors
     if (status >= 400) {
-      console.log(`   Error Response: ${status} - ${res.statusMessage}`);
+      // console.log(`   Error Response: ${status} - ${res.statusMessage}`);
     }
   });
 
@@ -63,7 +65,7 @@ const bodyLogger = (req, res, next) => {
       const sanitizedBody = { ...body };
       if (sanitizedBody.token) sanitizedBody.token = "***";
       if (sanitizedBody.refreshToken) sanitizedBody.refreshToken = "***";
-      console.log(`   Response Body:`, JSON.stringify(sanitizedBody, null, 2));
+      // console.log(`   Response Body:`, JSON.stringify(sanitizedBody, null, 2));
     }
     originalJson.call(this, body);
   };
@@ -127,6 +129,7 @@ app.use("/api/v1/user", authRoutes);
 app.use("/api/v1/user", submitContestResponse);
 app.use("/api/v1/user", leaderboardRouter);
 app.use("/api/v1/user", contestDetailsRouter);
+app.use("/api/v1/user/dashboard", userDashboardRouter);
 
 // Admin routes
 console.log("📌 /api/v1/admin");
