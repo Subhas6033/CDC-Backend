@@ -15,17 +15,26 @@ const getUserStats = asynchandler(async (req, res) => {
   const totalContests = results.length;
 
   const totalScore = results.reduce((sum, r) => sum + r.score, 0);
-  const avgScore = totalContests > 0 ? Math.round((totalScore / totalContests) * 100 / results[0]?.totalQuestions || 1) : 0;
+  const avgScore =
+    totalContests > 0
+      ? Math.round(
+          ((totalScore / totalContests) * 100) / results[0]?.totalQuestions || 1
+        )
+      : 0;
 
   const bestRank = user.bestRank || "N/A";
 
   res.status(200).json(
-    new APIRES(200, {
-      totalContests,
-      bestRank,
-      avgScore,
-      currentStreak: user.currentStreak || 0,
-    }, "User stats fetched successfully")
+    new APIRES(
+      200,
+      {
+        totalContests,
+        bestRank,
+        avgScore,
+        currentStreak: user.currentStreak || 0,
+      },
+      "User stats fetched successfully"
+    )
   );
 });
 
@@ -39,15 +48,18 @@ const getUserPerformance = asynchandler(async (req, res) => {
 
   const performanceData = results.reverse().map((r, index) => ({
     week: `Week ${index + 1}`,
-    score: r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0,
+    score:
+      r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0,
     percentile: 0,
     contestName: r.quizId?.testName || `Contest ${index + 1}`,
     submittedAt: r.submittedAt,
   }));
 
-  res.status(200).json(
-    new APIRES(200, performanceData, "User performance fetched successfully")
-  );
+  res
+    .status(200)
+    .json(
+      new APIRES(200, performanceData, "User performance fetched successfully")
+    );
 });
 
 const getUpcomingContests = asynchandler(async (req, res) => {
@@ -62,9 +74,15 @@ const getUpcomingContests = asynchandler(async (req, res) => {
     .sort({ date: 1 })
     .limit(10);
 
-  res.status(200).json(
-    new APIRES(200, upcomingContests, "Upcoming contests fetched successfully")
-  );
+  res
+    .status(200)
+    .json(
+      new APIRES(
+        200,
+        upcomingContests,
+        "Upcoming contests fetched successfully"
+      )
+    );
 });
 
 const getRecentHistory = asynchandler(async (req, res) => {
@@ -81,14 +99,20 @@ const getRecentHistory = asynchandler(async (req, res) => {
     contestDate: r.quizId?.date || r.submittedAt,
     score: r.score,
     totalQuestions: r.totalQuestions,
-    percentage: r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0,
+    percentage:
+      r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0,
     timeTaken: r.timeTaken,
     submittedAt: r.submittedAt,
   }));
 
-  res.status(200).json(
-    new APIRES(200, history, "Recent history fetched successfully")
-  );
+  res
+    .status(200)
+    .json(new APIRES(200, history, "Recent history fetched successfully"));
 });
 
-export { getUserStats, getUserPerformance, getUpcomingContests, getRecentHistory };
+export {
+  getUserStats,
+  getUserPerformance,
+  getUpcomingContests,
+  getRecentHistory,
+};
