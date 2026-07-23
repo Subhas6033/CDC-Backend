@@ -6,6 +6,10 @@ import {
 } from "../../Utils/index.utils.js";
 import { Test } from "../Models/Contest.model.js";
 import { Question } from "../Models/Question.model.js";
+import { invalidateCache, CACHE_KEYS } from "../../Utils/RedisCache.utils.js";
+import { upload } from "../../Middleware/Multer.middleware.js";
+import { parseQuestionFile } from "../../Utils/PdfParser.utils.js";
+import fs from "fs";
 
 const createTest = asynchandler(async (req, res) => {
   const {
@@ -63,6 +67,7 @@ const createTest = asynchandler(async (req, res) => {
         questionText: q.questionText,
         options: q.options,
         correctOption: q.correctOption,
+        questionImage: q.questionImage || null,
       };
     })
   );
@@ -79,6 +84,11 @@ const createTest = asynchandler(async (req, res) => {
     status: "pending",
     isPublished: true,
   });
+
+  // Invalidate contests cache after creating new contest
+  await invalidateCache(`${CACHE_KEYS.CONTESTS}*`);
+  await invalidateCache(`${CACHE_KEYS.UPCOMING_CONTESTS}*`);
+  await invalidateCache(`${CACHE_KEYS.TEST_DETAILS}*`);
 
   return res
     .status(201)
@@ -141,6 +151,7 @@ const saveDraftContest = asynchandler(async (req, res) => {
         questionText: q.questionText,
         options: q.options,
         correctOption: q.correctOption,
+        questionImage: q.questionImage || null,
       };
     })
   );
@@ -158,6 +169,9 @@ const saveDraftContest = asynchandler(async (req, res) => {
     isDraft: true,
     isPublished: false,
   });
+
+  // Invalidate cache
+  await invalidateCache(`${CACHE_KEYS.CONTESTS}*`);
 
   return res.status(201).json(
     new APIRES(201, "Contest saved as draft successfully", {
@@ -200,6 +214,12 @@ const updateContest = asynchandler(async (req, res) => {
     { new: true }
   );
 
+  // Invalidate cache after update
+  await invalidateCache(`${CACHE_KEYS.CONTESTS}*`);
+  await invalidateCache(`${CACHE_KEYS.UPCOMING_CONTESTS}*`);
+  await invalidateCache(`${CACHE_KEYS.TEST_DETAILS}*`);
+  await invalidateCache(`${CACHE_KEYS.QUESTION_DETAILS}${contestId}*`);
+
   return res
     .status(200)
     .json(new APIRES(200, "Contest updated successfully", { updatedContest }));
@@ -208,8 +228,69 @@ const updateContest = asynchandler(async (req, res) => {
 const deleteContest = asynchandler(async (req, res) => {
   const { contestId } = req.params;
   if (!contestId) throw new APIERR(404, "Contest ID is NOT FOUND");
+
   await Test.findByIdAndDelete(contestId);
+
+  // Invalidate cache after deletion
+  await invalidateCache(`${CACHE_KEYS.CONTESTS}*`);
+  await invalidateCache(`${CACHE_KEYS.UPCOMING_CONTESTS}*`);
+  await invalidateCache(`${CACHE_KEYS.TEST_DETAILS}*`);
+  await invalidateCache(`${CACHE_KEYS.QUESTION_DETAILS}${contestId}*`);
+  await invalidateCache(`${CACHE_KEYS.LEADERBOARD}${contestId}*`);
+
   return res.status(200).json(new APIRES(200, "Contest deleted successfully"));
+});
+
+// Parse questions from PDF/Word file
+const parseQuestions = asynchandler(async (req, res) => {
+  if (!req.file) {
+    throw new APIERR(400, "Please upload a PDF or Word file");
+  }
+
+  const filePath = req.file.path;
+
+  // Check if images were uploaded with the file
+  let uploadedImages = [];
+  if (req.files && req.files.images) {
+    // Read each image and convert to base64
+    for (const imageFile of req.files.images) {
+      try {
+        const imageBuffer = fs.readFileSync(imageFile.path);
+        const base64 = imageBuffer.toString('base64');
+        const mimeType = imageFile.mimetype;
+        uploadedImages.push({
+          url: `data:${mimeType};base64,${base64}`,
+          type: mimeType,
+          originalName: imageFile.originalname
+        });
+
+        // Clean up the image file after reading
+        try {
+          fs.unlinkSync(imageFile.path);
+        } catch (e) {}
+      } catch (e) {
+        console.error("Error reading uploaded image:", e);
+      }
+    }
+    console.log("Uploaded images count:", uploadedImages.length);
+  }
+
+  const result = await parseQuestionFile(filePath, uploadedImages);
+
+  // Clean up the uploaded file
+  try {
+    fs.unlinkSync(filePath);
+  } catch (err) {
+    console.error("Error cleaning up file:", err);
+  }
+
+  if (!result.success) {
+    throw new APIERR(400, result.message);
+  }
+
+  return res.status(200).json(
+    new APIRES(200, result, "Questions extracted successfully")
+  );
 });
 
 export {
@@ -218,4 +299,5 @@ export {
   getContest,
   updateContest,
   deleteContest,
+  parseQuestions,
 };
