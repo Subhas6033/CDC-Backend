@@ -80,7 +80,7 @@ export const getCacheStats = async () => {
           return {
             key,
             type,
-            value,
+            // value,
           };
         } catch (error) {
           return {
@@ -93,7 +93,7 @@ export const getCacheStats = async () => {
 
     return {
       totalKeys: keys.length,
-      // cache, 
+      cache, 
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
